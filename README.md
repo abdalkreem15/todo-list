@@ -4,10 +4,11 @@ A lightweight and user-friendly app to help you manage your daily tasks efficien
 
 ## Features
 
-- Add new tasks quickly
-- Mark tasks as completed or incomplete by clicking anywhere on the task
-- Filter tasks by **All**, **Completed**, or **Incomplete** to easily organize your list
-- Remove tasks you no longer need
+- Add new tasks quickly  
+- Mark tasks as completed or incomplete by clicking anywhere on the task  
+- Filter tasks by **All**, **Completed**, or **Incomplete** to easily organize your list  
+- Visually appealing and clean design for a great user experience  
+- Remove tasks you no longer need  
 
 ## Future Updates
 
