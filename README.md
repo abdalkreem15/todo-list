@@ -13,11 +13,6 @@ A lightweight and user-friendly app to help you manage your daily tasks efficien
 
 ## Future Updates
 
-=======
-
-## Future Updates
-
-- Light and dark mode themes for better accessibility and comfort 
 - Edit existing tasks to update or correct them
 
 ---
