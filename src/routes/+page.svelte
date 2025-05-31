@@ -1,5 +1,6 @@
 <script lang="ts">
     import {onMount} from "svelte";
+    const version = '1.0.4';
 
     type Todo = {
         id: number;
