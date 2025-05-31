@@ -147,12 +147,20 @@
 
 <style>
     /* Global base styles */
+    :global(*),
+    :global(*::before),
+    :global(*::after) {
+        box-sizing: border-box;
+    }
+
     :global(body), :global(html) {
         margin: 0;
         padding: 0;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         height: 100%;
         transition: background-color 0.3s, color 0.3s;
+        overflow-x: hidden;
+        max-width: 100vw;
     }
 
     /* Light theme on body */
@@ -168,15 +176,16 @@
     }
 
     main {
-    width: 90%;
-    max-width: 600px;
-    margin: 3rem auto;  /* centers horizontally */
-    background-color: white; /* or theme-based color */
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    transition: background-color 0.3s, color 0.3s;
-}
+        width: 90%;
+        max-width: 600px;
+        margin: 3rem auto;  /* centers horizontally */
+        background-color: white; /* or theme-based color */
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        transition: background-color 0.3s, color 0.3s;
+        overflow-x: hidden;
+    }
 
     /* Main container background differs from body */
     :global(body.light) main {
@@ -205,29 +214,30 @@
         color: #333;
     }
 
-:global(body.dark) header {
+    :global(body.dark) header {
         background-color: #222; /* dark gray for dark theme */
         color: #eee;
     }
 
     button.toggle-theme {
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    background-color: var(--button-bg, #4CAF50);
-    color: white;
-    transition: background-color 0.3s ease;
-    user-select: none;
+        padding: 0.6rem 1.2rem;
+        font-size: 1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: #4CAF50;
+        color: white;
+        transition: background-color 0.3s ease;
+        user-select: none;
     }
 
     button.toggle-theme:hover {
-    background-color: var(--button-hover-bg, #45a049);
+        background-color: #45a049;
     }
 
     header button {
-        width: 100%;
+        width: auto;
+        max-width: 100%;
         padding: 0.8rem 1rem;
         font-size: 1.1rem;
         box-sizing: border-box;
@@ -400,8 +410,18 @@
 
     /* Responsive styles */
     @media (max-width: 600px) {
+        :global(html), :global(body) {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
         main {
+            width: 100vw;
+            max-width: 100vw;
             padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0;
+            box-shadow: none;
         }
 
         h1 {
@@ -410,8 +430,10 @@
 
         .input,
         .filter {
+            display: flex;
             flex-direction: column;
             align-items: stretch;
+            width: 100%;
         }
 
         .input input[type="text"],
@@ -433,6 +455,9 @@
             flex-direction: column;
             align-items: flex-start;
             font-size: 1rem;
+            width: 100%;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         .removeBTN {
@@ -442,29 +467,51 @@
 
         header {
             padding: 0.5rem 1rem;
+            flex-direction: column;
+            align-items: stretch;
         }
 
-        header button {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.9rem;
+        button.toggle-theme {
+            width: 100%;
+            font-size: 1rem;
+            padding: 0.8rem;
+            border-radius: 10px;
+            background-color: #4CAF50;
         }
     }
 
     @media (max-width: 400px) {
         main {
-            width: 100%;
-            margin: 1rem 0;
-            border-radius: 0;
-            box-shadow: none;
+        width: 100vw;             /* ensure exact screen width */
+        max-width: 100vw;
+        margin: 1rem 0;
+        border-radius: 0;
+        box-shadow: none;
+        overflow-x: hidden;       /* prevent scroll */
+    }
+
+        :global(html), :global(body) {
+            overflow-x: hidden;       /* fix root container too */
         }
 
         header {
-            padding: 0.3rem 0.5rem;
+            flex-wrap: wrap;          /* allow wrapping */
         }
 
         header button {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.8rem;
+            width: auto;
+            max-width: 100%;
+        }
+
+        ul, li {
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .input input[type="text"],
+        .addBTN,
+        .filter button {
+            max-width: 100%;
         }
     }
 </style>
