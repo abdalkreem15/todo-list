@@ -9,7 +9,8 @@ A lightweight and user-friendly app to help you manage your daily tasks efficien
 - Filter tasks by **All**, **Completed**, or **Incomplete** to easily organize your list  
 - Visually appealing and clean design for a great user experience  
 - Remove tasks you no longer need  
-- Light and dark mode themes for better accessibility and comfort  
+- Light and dark mode themes for better accessibility and comfort
+- Rearrangeing tasks by draging them to the place you want
 
 ## Future Updates
 
