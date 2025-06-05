@@ -1,11 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-import * as fs from 'fs';
-import * as path from 'path';
 
-// Read package.json version
-const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
-const appVersion = pkg.version;
+// MANUALLY CHANGE THE APP VERSION HERE
+const appVersion = '1.0.4'; // <--- You can manually update this string
 
 export default defineConfig({
   plugins: [sveltekit()],
