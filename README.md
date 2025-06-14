@@ -10,10 +10,11 @@ A lightweight and user-friendly app to help you manage your daily tasks efficien
 - Visually appealing and clean design for a great user experience  
 - Remove tasks you no longer need  
 - Light and dark mode themes for better accessibility and comfort  
+- Edit existing tasks to update or correct them
 
 ## Future Updates
 
-- Edit existing tasks to update or correct them
+- No future updates planned for now
 
 ---
 

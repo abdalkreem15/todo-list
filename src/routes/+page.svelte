@@ -6,11 +6,16 @@
         id: number;
         text: string;
         completed: boolean;
+        // New property to track if a todo item is in editing mode
+        isEditing?: boolean;
+        // New property to temporarily hold the edited text before saving
+        editedText?: string;
     };
 
     let todos = $state<Todo[]>([]);
     let current_theme = $state("light"); // Default to 'light' theme
     // svelte-ignore non_reactive_update
+        // svelte-ignore non_reactive_update
         let draggedTodoId: number | null = null; // To store the ID of the todo being dragged
     let hoveredTodoId: number | null = $state(null); // To store the ID of the todo being hovered over
 
@@ -20,7 +25,12 @@
         const stored = localStorage.getItem("todos");
         if (stored) {
             try {
-                todos = JSON.parse(stored);
+                // When loading, ensure new properties are handled or default values are set
+                todos = JSON.parse(stored).map((todo: Todo) => ({
+                    ...todo,
+                    isEditing: false, // Ensure it's never true on load
+                    editedText: todo.text // Initialize editedText with current text
+                }));
             } catch (e) {
                 console.error("Failed to parse todos from localStorage:", e);
                 // Clear invalid data to prevent further errors
@@ -33,7 +43,13 @@
     // This Svelte effect reacts to changes in the 'todos' state.
     $effect(() => {
         if (typeof localStorage !== 'undefined') {
-            localStorage.setItem("todos", JSON.stringify(todos));
+            // When saving, we don't need to save isEditing or editedText properties
+            // as they are temporary UI states.
+            const todosToSave = todos.map(todo => {
+                const { isEditing, editedText, ...rest } = todo;
+                return rest;
+            });
+            localStorage.setItem("todos", JSON.stringify(todosToSave));
         }
     });
 
@@ -63,7 +79,9 @@
             {
                 id: Date.now(), // Unique ID for the new todo
                 text,
-                completed: false // New todos are incomplete by default
+                completed: false, // New todos are incomplete by default
+                isEditing: false, // Not editing when first added
+                editedText: text // Initialize editedText
             }
         ];
         newTodoText = ""; // Clear input field
@@ -103,6 +121,11 @@
 
     // Handler when a drag operation starts on a list item
     function handleDragStart(event: DragEvent, id: number) {
+        // Prevent drag if an item is currently being edited
+        if (todos.find(t => t.id === id)?.isEditing) {
+            event.preventDefault();
+            return;
+        }
         draggedTodoId = id; // Store the ID of the item being dragged
         event.dataTransfer?.setData("text/plain", id.toString());
     }
@@ -157,6 +180,52 @@
         draggedTodoId = null; // Reset the dragged ID
         hoveredTodoId = null; // Ensure hovered ID is also reset
     }
+
+    // --- Edit Functions ---
+
+    // Function to set a todo item into editing mode
+    function editTodo(id: number) {
+        todos = todos.map(todo =>
+            todo.id === id
+                ? { ...todo, isEditing: true, editedText: todo.text }
+                : { ...todo, isEditing: false } // Ensure only one item is edited at a time
+        );
+    }
+
+    // Function to save the edited text of a todo item
+    function saveEdit(id: number) {
+        todos = todos.map(todo => {
+            if (todo.id === id) {
+                const trimmedText = (todo.editedText || '').trim();
+                if (trimmedText === '') {
+                    MSG = "Task cannot be empty. Edit cancelled.";
+                    return { ...todo, isEditing: false, editedText: todo.text }; // Revert if empty
+                }
+                MSG = ""; // Clear message
+                return { ...todo, text: trimmedText, isEditing: false, editedText: trimmedText };
+            }
+            return todo;
+        });
+    }
+
+    // Function to cancel editing for a todo item, reverting changes
+    function cancelEdit(id: number) {
+        todos = todos.map(todo =>
+            todo.id === id
+                ? { ...todo, isEditing: false, editedText: todo.text } // Revert editedText to original text
+                : todo
+        );
+        MSG = ""; // Clear any messages
+    }
+
+    // Handle keydown events for editing input
+    function handleEditInputKeydown(event: KeyboardEvent, id: number) {
+        if (event.key === 'Enter') {
+            saveEdit(id);
+        } else if (event.key === 'Escape') {
+            cancelEdit(id);
+        }
+    }
 </script>
 
 <header>
@@ -190,16 +259,11 @@
     <div class="list">
         <ul>
             {#each filteredTodos() as todo (todo.id)}
-                <!-- Removed svelte-ignore a11y_click_events_have_key_events as the primary click target is now the li -->
-                <!-- Removed svelte-ignore a11y_no_noninteractive_element_interactions for the same reason -->
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <li
                     class:completed={todo.completed}
                     class:dragging={todo.id === draggedTodoId}
                     class:drag-over={todo.id === hoveredTodoId && todo.id !== draggedTodoId}
-                    onclick={() => toggleChecked(todo.id)} 
-                    style="cursor: pointer; {todo.id === draggedTodoId ? 'cursor: grabbing;' : 'cursor: grab;'}"
+                    style="cursor: grab;"
                     draggable="true"
                     ondragstart={(e) => handleDragStart(e, todo.id)}
                     ondragover={(e) => handleDragOver(e, todo.id)}
@@ -211,21 +275,54 @@
                         type="checkbox"
                         checked={todo.completed}
                         onchange={(e) => {
-                        e.stopPropagation(); // VERY IMPORTANT: Stops the click from bubbling up to the li
-                        toggleChecked(todo.id);
+                            e.stopPropagation();
+                            toggleChecked(todo.id);
                         }}
                     />
-                    <!-- Text content for the todo item -->
-                    <span style="flex-grow: 1;">{todo.text}</span>
+
+                    {#if todo.isEditing}
+                        <!-- Input field visible when editing -->
+                        <!-- svelte-ignore a11y_autofocus -->
+                        <input
+                            type="text"
+                            bind:value={todo.editedText}
+                            onkeydown={(e) => handleEditInputKeydown(e, todo.id)}
+                            onblur={() => saveEdit(todo.id)}
+                            class="edit-input"
+                            autofocus
+                        />
+                        <button class="edit-save-btn" onclick={(e) => { e.stopPropagation(); saveEdit(todo.id); }}>✅</button>
+                        <button class="edit-cancel-btn" onclick={(e) => { e.stopPropagation(); cancelEdit(todo.id); }}>❌</button>
+                    {:else}
+                        <!-- Text visible when not editing -->
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <span
+                            class="todo-text"
+                            onclick={(e) => { e.stopPropagation(); toggleChecked(todo.id); }}
+                            ondblclick={() => editTodo(todo.id)}
+                            style="flex-grow: 1;"
+                        >
+                            {todo.text}
+                        </span>
+                        <button
+                            class="edit-icon-btn"
+                            onclick={(e) => { e.stopPropagation(); editTodo(todo.id); }}
+                            aria-label="Edit task"
+                        >
+                            ✏️
+                        </button>
+                    {/if}
+
                     <button
                         class="removeBTN"
                         onclick={(e) => {
-                        e.stopPropagation(); // VERY IMPORTANT: Prevents li's onclick when clicking remove button
-                        removeTodo(todo.id);
+                            e.stopPropagation();
+                            removeTodo(todo.id);
                         }}
                         aria-label="Remove task"
                     >
-                        ❌
+                        🗑️
                     </button>
                 </li>
             {/each}
@@ -536,7 +633,7 @@
 
     /* Remove button */
     .removeBTN {
-        margin-left: auto;
+        margin-left: 0.5rem; /* Add some space before the remove button */
         background: none;
         border: none;
         color: #e74c3c; /* Red color */
@@ -546,6 +643,7 @@
         padding: 0.5rem;
         border-radius: 50%; /* Make it circular */
         line-height: 1; /* For better vertical alignment of emoji */
+        flex-shrink: 0; /* Prevent button from shrinking */
     }
 
     :global(body.light) .removeBTN:hover {
@@ -605,6 +703,80 @@
         margin-top: 0; /* Prevents double margin if drag-over and next item both have margin-bottom */
     }
 
+    /* --- Edit Mode Styles --- */
+    .edit-input {
+        flex-grow: 1;
+        padding: 0.4rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        border: 1px solid #4CAF50;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    :global(body.light) .edit-input {
+        background-color: #f0f8ff; /* Light blue for editing */
+        color: #333;
+    }
+    :global(body.dark) .edit-input {
+        background-color: #2a2a2a;
+        color: #eee;
+        border-color: #388e3c;
+    }
+
+    .edit-save-btn, .edit-cancel-btn {
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        padding: 0.3rem;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+        flex-shrink: 0;
+    }
+
+    .edit-save-btn:hover {
+        background-color: rgba(76, 175, 80, 0.2);
+    }
+    .edit-cancel-btn:hover {
+        background-color: rgba(231, 76, 60, 0.2);
+    }
+
+    .edit-icon-btn {
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+        margin-left: auto; /* Push to the right */
+        flex-shrink: 0;
+    }
+
+    :global(body.light) .edit-icon-btn {
+        color: #555;
+    }
+    :global(body.light) .edit-icon-btn:hover {
+        background-color: rgba(0,0,0,0.1);
+        color: #333;
+    }
+    :global(body.dark) .edit-icon-btn {
+        color: #aaa;
+    }
+    :global(body.dark) .edit-icon-btn:hover {
+        background-color: rgba(255,255,255,0.1);
+        color: #eee;
+    }
+
+    .todo-text {
+        flex-grow: 1; /* Allows the text to take up available space */
+        padding: 0.2rem 0; /* Align with checkbox visually */
+        cursor: pointer; /* Indicate it's clickable */
+        min-height: 1.2em; /* Ensure it has height even if empty */
+    }
+
+
     /* Responsive styles */
     @media (max-width: 600px) {
         :global(html), :global(body) {
@@ -659,10 +831,20 @@
             padding: 0.6rem 0.8rem;
         }
 
-        .removeBTN {
-            align-self: center; /* Center vertically in the row */
+        .removeBTN, .edit-icon-btn {
             font-size: 1.1rem;
             padding: 0.4rem;
+        }
+
+        .edit-input {
+            width: calc(100% - 70px); /* Adjust width to make space for buttons on mobile */
+            font-size: 0.95rem;
+            padding: 0.3rem;
+        }
+
+        .edit-save-btn, .edit-cancel-btn {
+            font-size: 1.1rem;
+            padding: 0.2rem;
         }
 
         header {
