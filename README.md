@@ -15,7 +15,7 @@ A lightweight and user-friendly app to help you manage your daily tasks efficien
 
 ## Future Updates
 
-- No future updates planned for now
+- No future updates planned for now if there are any bugs feel free to point them out
 
 ---
 
